@@ -4,22 +4,18 @@ import re
 import subprocess
 import time
 
-# Name of testing branch
-testing_name='testing'
+# Repoutil location
+repoutil='/bin/reposado/code/repoutil' 
 
-# Name of production branch
-production_name='production'
+# Name of base branch to compare to
+base_branch='Testing'
 
-# Threshold of days between moving testing to production
-days_between_promotion=4
-
-# Find threshold date based on days between promotion
-threshold_date = datetime.today() - timedelta(days=days_between_promotion)
-
-def main():
+def promote(trailing_branch, days_between_promotion):
+    # Find threshold date based on days between promotion
+    threshold_date = datetime.today() - timedelta(days=days_between_promotion)
 
     # Get list of updates to consider promoting
-    cmd="/usr/local/reposado/repoutil --diff=" + testing_name + " " + production_name
+    cmd="%s --diff=%s %s" % (repoutil, base_branch, trailing_branch)
     difftest = subprocess.check_output(cmd, shell=True).splitlines()
 
     # Initialize counter at second line to avoid Unique to 'testing':
@@ -41,11 +37,11 @@ def main():
             # If the date of the product is less than the threshold date...
             if line_date < threshold_date:
                 # Add it to the production branch
-                print "Adding %s to %s because %s is before %s" % (product_id, production_name, line_date, threshold_date)
-                cmd="/usr/local/reposado/repoutil --add-product " + product_id + " " + production_name
-                subprocess.call(cmd, shell=True)
+                print "Adding %s to %s because %s is before %s" % (product_id, trailing_branch, line_date, threshold_date)
+                cmd="%s --add-product %s %s" % (repoutil, product_id, trailing_branch)
+                # subprocess.call(cmd, shell=True)
             else:
-                print "Keeping %s in %s because %s is still after %s" % (product_id, testing_name, line_date, threshold_date)
+                print "Keeping %s in %s because %s is still after %s" % (product_id, base_branch, line_date, threshold_date)
         # If we've gotten to a blank line, end the while loop
         else:
             break
@@ -53,4 +49,5 @@ def main():
         i += 1
 
 if __name__ == '__main__':
-    main()
+    promote('production', 4)
+    promote('development', 2)
